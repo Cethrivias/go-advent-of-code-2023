@@ -15,6 +15,7 @@ var limits = map[string]int{
 	"blue":  14,
 }
 
+// Result: 2149
 func main() {
 	total := 0
 	file, err := os.Open("input.txt")
