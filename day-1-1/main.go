@@ -34,7 +34,6 @@ func main() {
 		}
 
 		total += num
-
 	}
 
 	fmt.Printf("Total: %d\n", total)
