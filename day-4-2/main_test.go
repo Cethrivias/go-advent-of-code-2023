@@ -5,8 +5,8 @@ import "testing"
 func TestSolveExample(t *testing.T) {
 	res := Solve("input_test.txt")
 
-	if res != 13 {
-		t.Errorf("Res should be 13, but got %d", res)
+	if res != 30 {
+		t.Errorf("Res should be 30, but got %d", res)
 
 	}
 }
@@ -14,7 +14,7 @@ func TestSolveExample(t *testing.T) {
 func TestSolve(t *testing.T) {
 	res := Solve("input.txt")
 
-	if res != 24733 {
-		t.Errorf("Res should be 24733, but got %d", res)
+	if res != 5422730 {
+		t.Errorf("Res should be 5422730, but got %d", res)
 	}
 }
