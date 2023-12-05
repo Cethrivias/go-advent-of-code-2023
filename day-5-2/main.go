@@ -14,14 +14,27 @@ func Solve(path string) int {
 
 	input := getInput(path)
 
-	for _, seed := range input.seeds {
-		fmt.Printf("Seed %d", seed)
-		for _, gmap := range input.maps {
-			seed = mapSeed(gmap.ranges, seed)
-		}
-		fmt.Printf(" -> %d\n", seed)
-		if spot == -1 || spot > seed {
-			spot = seed
+	seedRanges := []SeedRange{}
+	for len(input.seeds) > 0 {
+		seedRange := input.seeds[:2]
+		input.seeds = input.seeds[2:]
+
+		seedRanges = append(seedRanges, SeedRange{start: seedRange[0], offset: seedRange[1]})
+	}
+
+	for _, r := range seedRanges {
+		fmt.Printf("Seed range: %+v\n", r)
+		for i := r.start; i < r.start+r.offset; i++ {
+			seed := i
+
+			// fmt.Printf("Seed %d", seed)
+			for _, gmap := range input.maps {
+				seed = mapSeed(gmap.ranges, seed)
+			}
+			// fmt.Printf(" -> %d\n", seed)
+			if spot == -1 || spot > seed {
+				spot = seed
+			}
 		}
 	}
 
@@ -125,5 +138,10 @@ type GardenMap struct {
 type GardenRange struct {
 	source int
 	target int
+	offset int
+}
+
+type SeedRange struct {
+	start  int
 	offset int
 }
