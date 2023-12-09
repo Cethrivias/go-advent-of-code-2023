@@ -10,10 +10,10 @@ func TestSolveExample(t *testing.T) {
 	}
 }
 
-func TestSolve(t *testing.T) {
+func TestSolveTask(t *testing.T) {
 	res := Solve("input.txt")
 
-	if res != 261668924 {
-		t.Errorf("Result should be 261668924, but got %d", res)
+	if res != 24261545 {
+		t.Errorf("Result should be 24261545, but got %d", res)
 	}
 }
