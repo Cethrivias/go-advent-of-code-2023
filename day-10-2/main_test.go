@@ -1,6 +1,8 @@
 package main
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSolveExample1(t *testing.T) {
 	res := Solve("input_test.txt")

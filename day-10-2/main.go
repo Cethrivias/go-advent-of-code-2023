@@ -4,21 +4,13 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"strings"
 	"time"
 )
 
-var checked = []Coords{}
-var tiles [][]TileType
-
 func Solve(path string) (total int) {
 	input := getInput(path)
-
-	for _, line := range input.Map {
-		println(string(line))
-	}
 
 	loop := Loop{}
 	directions := getDirections(input.Map, input.Start)
@@ -36,10 +28,10 @@ func Solve(path string) (total int) {
 
 	// Part 2
 
-	tiles = make([][]TileType, len(input.Map))
-	for i, row := range input.Map {
-		tiles[i] = make([]TileType, len(row))
-	}
+	// Enlarge map
+	mapEnchanced := enchance(input.Map)
+	println("ENCHANCE!")
+	printMap(mapEnchanced)
 
 	// go through tiles 1 by 1
 	// skip if loop
@@ -47,43 +39,35 @@ func Solve(path string) (total int) {
 	//    check if has enclosed nearby then mark them as regular too
 	// mark everything else as enclosed
 
-	for i := range tiles {
-		for j := range tiles[i] {
+	for i := range input.Map {
+		for j := range input.Map[i] {
 			// println()
 			// printMap(input.Map, loop)
 			// time.Sleep(250 * time.Millisecond)
 			if isLoop(input.Map, loop, Coords{i, j}) {
-				tiles[i][j] = LoopTile
+				input.Map[i][j].Type = LoopTile
 				continue
 			}
 			if isRegular(input.Map, Coords{i, j}) {
-				tiles[i][j] = RegularTile
+				input.Map[i][j].Type = RegularTile
 				spreadRegularity(input.Map, Coords{i, j})
 				continue
 			}
-			tiles[i][j] = EnclosedTile
+			input.Map[i][j].Type = EnclosedTile
 		}
 	}
 
-	// Check if possible to squeeze through the pipes
 	println()
-	printMap(input.Map, loop)
+	printMap(input.Map)
 	time.Sleep(250 * time.Millisecond)
 
-	for i := range tiles {
-		for j, tileType := range tiles[i] {
-			if tileType == EnclosedTile {
-				if canEscape(input.Map, loop, Coords{i, j}) {
-					spreadRegularity(input.Map, Coords{i, j})
-				}
-			}
-		}
-	}
+	// Ensmall map
 
+	// Counting enclosed tiles
 	total = 0
-	for i := range tiles {
-		for j := range tiles[i] {
-			if tiles[i][j] == EnclosedTile {
+	for i := range input.Map {
+		for j := range input.Map[i] {
+			if input.Map[i][j].Type == EnclosedTile {
 				total++
 			}
 		}
@@ -92,76 +76,26 @@ func Solve(path string) (total int) {
 	return total
 }
 
-func canEscape(m Map, l Loop, c Coords) bool {
-	// fmt.Printf("Checking: %+v\n", c)
-	// below
-	cCurr := c.Bottom()
-	if m[cCurr.i][cCurr.j] == '7' { // && tiles[cCurr.Right().i][cCurr.Right().j] == LoopTile {
-		println("here")
-		wallA := []Coords{cCurr}
-		wallB := []Coords{cCurr.Right()}
-		cCurr := cCurr.Bottom()
-		cOther := cCurr.Right()
-		wallA = append(wallA, cCurr)
-		wallB = append(wallB, cOther)
-		for {
-			directions := getDirections(m, cCurr)
-			directionsA := []Coords{}
-			for _, direction := range directions {
-				if !isLoop(m, l, direction) {
-					continue
-				}
-				if sliceContains(wallA, direction) {
-					continue
-				}
-				directionsA = append(directionsA, direction)
-			}
-			if len(directionsA) != 1 {
-				log.Fatal("WTF A")
-			}
+func enchance(m Map) Map {
+	mapEnchanced := make([][]Tile, len(m)*2)
 
-			directions = getDirections(m, cOther)
-			directionsB := []Coords{}
-			for _, direction := range directions {
-				if !isLoop(m, l, direction) {
-					continue
-				}
-				if sliceContains(wallB, direction) {
-					continue
-				}
-				directionsB = append(directionsB, direction)
-			}
-			if len(directionsA) != 1 {
-				log.Fatal("WTF B")
-			}
+	for i := range m {
+		mapEnchanced[i*2] = make([]Tile, len(m[i])*2)
+		for j := range m[i] {
+			mapEnchanced[i*2][j*2] = m[i][j]
+			// if i%2 == 0 {
+			//
+			// 	continue
+			// }
 
-			cCurr = directionsA[0]
-			wallA = append(wallA, cCurr)
-			cOther = directionsB[0]
-			wallB = append(wallB, cOther)
-
-			fmt.Printf("A: %+v; B: %+v\n", directionsA[0], directionsB[0])
-			if math.Abs(float64(directionsA[0].i-directionsB[0].i)) > 1 ||
-				math.Abs(float64(directionsA[0].j-directionsB[0].j)) > 1 {
-				fmt.Printf("Walls diverge %+v : %+v\n", directionsA, directionsB)
-			}
 		}
 	}
 
-	return false
-}
-
-func sliceContains(slice []Coords, c Coords) bool {
-	for _, it := range slice {
-		if it == c {
-			return true
-		}
-	}
-	return false
+	return mapEnchanced
 }
 
 func isLoop(m Map, l Loop, c Coords) bool {
-	if m[c.i][c.j] == 'S' {
+	if m[c.i][c.j].Value == 'S' {
 		return true
 	}
 	for _, cLoop := range l {
@@ -174,7 +108,7 @@ func isLoop(m Map, l Loop, c Coords) bool {
 
 func isRegular(m Map, c Coords) bool {
 	for _, cCurr := range []Coords{c.Top(), c.Right(), c.Bottom(), c.Left()} {
-		if !m.withinBounds(cCurr) || tiles[cCurr.i][cCurr.j] == RegularTile {
+		if !m.withinBounds(cCurr) || m[cCurr.i][cCurr.j].Type == RegularTile {
 			return true
 		}
 	}
@@ -183,15 +117,15 @@ func isRegular(m Map, c Coords) bool {
 
 func spreadRegularity(m Map, c Coords) {
 	for _, cCurr := range []Coords{c.Top(), c.Right(), c.Bottom(), c.Left()} {
-		if m.withinBounds(cCurr) && tiles[cCurr.i][cCurr.j] == EnclosedTile {
-			tiles[cCurr.i][cCurr.j] = RegularTile
+		if m.withinBounds(cCurr) && m[cCurr.i][cCurr.j].Type == EnclosedTile {
+			m[cCurr.i][cCurr.j].Type = RegularTile
 			spreadRegularity(m, cCurr)
 		}
 	}
 }
 
 func move(m Map, c Coords, loop Loop) (Loop, bool) {
-	if m[c.i][c.j] == 'S' {
+	if m[c.i][c.j].Value == 'S' {
 		return loop, true
 	}
 	for _, cVisited := range loop {
@@ -213,32 +147,10 @@ func move(m Map, c Coords, loop Loop) (Loop, bool) {
 	return loop, false
 }
 
-func printMap(m Map, l Loop) {
-	mCopy := make(Map, len(m))
-
-	for i := range m {
-		mCopy[i] = make([]rune, len(m[i]))
-		for j, tile := range m[i] {
-			switch tiles[i][j] {
-			case RegularTile:
-				mCopy[i][j] = 'O'
-			case EnclosedTile:
-				mCopy[i][j] = 'I'
-			default:
-				mCopy[i][j] = tile
-			}
-		}
-	}
-
-	for _, row := range mCopy {
-		println("> ", string(row))
-	}
-}
-
 func getDirections(m Map, c Coords) []Coords {
 	res := []Coords{}
 
-	switch m[c.i][c.j] {
+	switch m[c.i][c.j].Value {
 	case 'S':
 		if c, ok := m.TopConnected(c); ok {
 			res = append(res, c)
@@ -295,7 +207,7 @@ func getDirections(m Map, c Coords) []Coords {
 			res = append(res, c)
 		}
 	default:
-		fmt.Printf("Unknown symbol: '%s'", string(m[c.i][c.j]))
+		fmt.Printf("Unknown symbol: '%s'", string(m[c.i][c.j].Value))
 	}
 
 	return res
@@ -314,8 +226,12 @@ func getInput(path string) *Input {
 	i := 0
 	for scanner.Scan() {
 		text := scanner.Text()
+		tiles := []Tile{}
+		for j, val := range text {
+			tiles = append(tiles, NewTile(val, NewCoords(i, j), UnknownTile))
+		}
 
-		input.Map = append(input.Map, []rune(text))
+		input.Map = append(input.Map, tiles)
 
 		j := strings.Index(text, "S")
 		if j != -1 {
@@ -332,7 +248,7 @@ type Input struct {
 	Start Coords
 }
 
-type Map [][]rune
+type Map [][]Tile
 
 func (m Map) TopConnected(c Coords) (Coords, bool) {
 	return m.hasConnection(c.Top(), "|F7S")
@@ -351,7 +267,7 @@ func (m Map) LeftConnected(c Coords) (Coords, bool) {
 }
 
 func (m Map) hasConnection(c Coords, pipes string) (Coords, bool) {
-	return c, m.withinBounds(c) && strings.Contains(pipes, string(m[c.i][c.j]))
+	return c, m.withinBounds(c) && strings.Contains(pipes, string(m[c.i][c.j].Value))
 }
 
 func (m Map) withinBounds(c Coords) bool {
@@ -361,6 +277,10 @@ func (m Map) withinBounds(c Coords) bool {
 type Coords struct {
 	i int
 	j int
+}
+
+func NewCoords(i int, j int) Coords {
+	return Coords{i: i, j: j}
 }
 
 func (c *Coords) Top() Coords {
@@ -379,13 +299,19 @@ func (c *Coords) Left() Coords {
 type Loop []Coords
 
 type Tile struct {
-	Type   bool
+	Type   TileType
 	Coords Coords
+	Value  rune
+}
+
+func NewTile(val rune, c Coords, t TileType) Tile {
+	return Tile{Coords: c, Type: t, Value: val}
 }
 
 type TileType string
 
 var (
+	UnknownTile  TileType = "unknown_tile"
 	RegularTile  TileType = "regular_tile"
 	EnclosedTile TileType = "enclosed_tile"
 	LoopTile     TileType = "loop_tile"
