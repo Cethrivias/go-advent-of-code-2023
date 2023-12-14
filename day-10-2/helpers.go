@@ -22,11 +22,7 @@ func printMap(m Map) {
 	for _, row := range mCopy {
 		print("> ")
 		for _, tile := range row {
-			val := string(tile.Value)
-			if val == "" {
-				val = " "
-			}
-			fmt.Printf("%+v", tile)
+			fmt.Printf("%s", string(tile.Value))
 		}
 		println()
 	}

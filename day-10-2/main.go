@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 )
 
 func Solve(path string) (total int) {
@@ -28,6 +27,8 @@ func Solve(path string) (total int) {
 
 	// Part 2
 
+	input.Map.MarkLoop(input.Start, loop)
+
 	// Enlarge map
 	mapEnchanced := enchance(input.Map)
 	println("ENCHANCE!")
@@ -39,29 +40,30 @@ func Solve(path string) (total int) {
 	//    check if has enclosed nearby then mark them as regular too
 	// mark everything else as enclosed
 
-	for i := range input.Map {
-		for j := range input.Map[i] {
+	for i := range mapEnchanced {
+		for j := range mapEnchanced[i] {
 			// println()
-			// printMap(input.Map, loop)
+			// printMap(mapEnchanced, loop)
 			// time.Sleep(250 * time.Millisecond)
-			if isLoop(input.Map, loop, Coords{i, j}) {
-				input.Map[i][j].Type = LoopTile
+			if mapEnchanced[i][j].Type == LoopTile {
 				continue
 			}
-			if isRegular(input.Map, Coords{i, j}) {
-				input.Map[i][j].Type = RegularTile
-				spreadRegularity(input.Map, Coords{i, j})
+			if isRegular(mapEnchanced, Coords{i, j}) {
+				mapEnchanced[i][j].Type = RegularTile
+				spreadRegularity(mapEnchanced, Coords{i, j})
 				continue
 			}
-			input.Map[i][j].Type = EnclosedTile
+			mapEnchanced[i][j].Type = EnclosedTile
 		}
 	}
 
-	println()
-	printMap(input.Map)
-	time.Sleep(250 * time.Millisecond)
+	println("Marked map:")
+	printMap(mapEnchanced)
 
 	// Ensmall map
+	println("ENSMALL!")
+	input.Map = ensmall(mapEnchanced)
+	printMap(input.Map)
 
 	// Counting enclosed tiles
 	total = 0
@@ -83,15 +85,47 @@ func enchance(m Map) Map {
 		mapEnchanced[i*2] = make([]Tile, len(m[i])*2)
 		for j := range m[i] {
 			mapEnchanced[i*2][j*2] = m[i][j]
-			// if i%2 == 0 {
-			//
-			// 	continue
-			// }
 
+			newTile := NewTile('.', NewCoords(i*2, j*2+1), UnknownTile)
+			if m[i][j].Type == LoopTile && strings.Contains("SFL-", string(m[i][j].Value)) {
+				newTile.Value = '-'
+				newTile.Type = LoopTile
+			}
+			mapEnchanced[i*2][j*2+1] = newTile
+		}
+
+		mapEnchanced[i*2+1] = make([]Tile, len(m[i])*2)
+		for j := range m[i] {
+			mapEnchanced[i*2+1][j*2] = m[i][j]
+
+			newTile := NewTile('.', NewCoords(i*2+1, j), UnknownTile)
+			if m[i][j].Type == LoopTile && strings.Contains("SF7|", string(m[i][j].Value)) {
+				newTile.Value = '|'
+				newTile.Type = LoopTile
+			}
+			mapEnchanced[i*2+1][j*2] = newTile
 		}
 	}
 
 	return mapEnchanced
+}
+
+func ensmall(m Map) Map {
+	mapEnsmalled := make(Map, 0)
+	for i := range m {
+		if i%2 != 0 {
+			continue
+		}
+		mapEnsmalled = append(mapEnsmalled, make([]Tile, 0))
+		for j := range m[i] {
+			if j%2 != 0 {
+				continue
+			}
+			mapEnsmalled[i/2] = append(mapEnsmalled[i/2], m[i][j])
+		}
+	}
+
+	return mapEnsmalled
 }
 
 func isLoop(m Map, l Loop, c Coords) bool {
@@ -264,6 +298,15 @@ func (m Map) BottomConnected(c Coords) (Coords, bool) {
 
 func (m Map) LeftConnected(c Coords) (Coords, bool) {
 	return m.hasConnection(c.Left(), "-FLS")
+}
+
+func (m Map) MarkLoop(s Coords, l Loop) Map {
+	for _, c := range l {
+		m[c.i][c.j].Type = LoopTile
+	}
+	m[s.i][s.j].Type = LoopTile
+
+	return m
 }
 
 func (m Map) hasConnection(c Coords, pipes string) (Coords, bool) {

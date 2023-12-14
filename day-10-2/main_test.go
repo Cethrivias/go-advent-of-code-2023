@@ -23,7 +23,7 @@ func TestSolveExample2(t *testing.T) {
 func TestSolveTask(t *testing.T) {
 	res := Solve("input.txt")
 
-	if res != 6870 {
-		t.Errorf("Expected 6870, but got %d", res)
+	if res != 287 {
+		t.Errorf("Expected 287, but got %d", res)
 	}
 }
