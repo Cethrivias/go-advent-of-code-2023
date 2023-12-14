@@ -60,7 +60,6 @@ func countCombinations(records string, checksum []int) (count int, ok bool) {
 		if countCurr, ok := countCombinations(recordsCurr, checksum); ok {
 			count += countCurr
 		}
-
 	}
 
 	return count, true
